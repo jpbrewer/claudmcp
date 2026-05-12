@@ -30,7 +30,10 @@ const baseHandler = createMcpHandler(
             .describe('Only include reviews created on or after this ISO 8601 date.'),
         },
       },
-      async (args) => jsonText(await listPendingReviews(args)),
+      async (args) => {
+        console.log('[mcp] list_pending_reviews args:', JSON.stringify(args));
+        return jsonText(await listPendingReviews(args));
+      },
     );
 
     server.registerTool(
