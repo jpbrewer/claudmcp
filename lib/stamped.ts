@@ -174,34 +174,6 @@ export async function listPendingReviews(
     totalReviewsInStore = res.total;
     totalPages = res.totalPages;
     scannedPages++;
-    if (page === 1) {
-      const counts = {
-        page,
-        results_len: res.results?.length ?? 0,
-        with_reply: 0,
-        empty_reply: 0,
-        null_reply: 0,
-        other: 0,
-      };
-      for (const item of res.results ?? []) {
-        const r = item?.review?.reply;
-        if (r === null || r === undefined) counts.null_reply++;
-        else if (typeof r === 'string' && r.trim() === '') counts.empty_reply++;
-        else if (typeof r === 'string') counts.with_reply++;
-        else counts.other++;
-      }
-      const sample = res.results?.[0]?.review;
-      console.log('[mcp] page1 counts:', JSON.stringify(counts));
-      console.log(
-        '[mcp] page1 sample:',
-        JSON.stringify({
-          id: sample?.id,
-          reply_type: typeof sample?.reply,
-          reply_value: sample?.reply,
-          dateReplied: sample?.dateReplied,
-        }),
-      );
-    }
     for (const item of res.results) {
       const m = mapReview(item.review, item.customer);
       if (m.hasReply) continue;
@@ -211,10 +183,6 @@ export async function listPendingReviews(
     }
     page++;
   }
-  console.log(
-    '[mcp] listPendingReviews summary:',
-    JSON.stringify({ limit, scannedPages, matches: matches.length, totalReviewsInStore }),
-  );
 
   return { reviews: matches, scannedPages, totalReviewsInStore };
 }
