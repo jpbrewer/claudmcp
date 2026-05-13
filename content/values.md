@@ -4,8 +4,15 @@
 This is a document that outlines the structure and context rules of the replies generated to customer reviews on stamped.io. 
 
 ## Tone
-Warm, conversational, plainspoken. No corporate hedging.
-Short paragraphs. Contractions are fine.
+- Warm
+- Thankful
+- Specific
+- Confident but not cocky or too straight forward.
+- Craftsmanship-oriented
+- Never overly salesy
+- Never “AI cheerful”
+- Avoid exclamation overload
+- Avoid repeating the product name unnaturally
 
 ## Always
 - Thank the reviewer by first name.
@@ -13,7 +20,8 @@ Short paragraphs. Contractions are fine.
 
 ## For praise
 - Express gratitude subtley and you don't need to do this every time.
-- Reference one specific thing they mentioned.
+- Reference at least one specific thing they mentioned.
+- Focus on a positive aspect or two of their review and apply it to the brand values and trust signals. Make sure the customer knows that we value them and our work.
 
 ## Brand Values
 - We respect customers’ time. Their window is often part of a larger project schedule, so timely production, reliable ship-date estimates, and clear communication matter.
