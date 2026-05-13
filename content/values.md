@@ -57,7 +57,7 @@ This is a document that outlines the structure and context rules of the replies 
 - Do not mention internal systems unless it helps explain timing or care in a natural way.
 - Do not pressure the customer to buy again.
 - Do not ask the customer to change their review.
-- Don't include a sign off after the reply.
+- Don't include a sign off after the reply from the TD Team. No sign offs at all.
 
 ## Length
 - Simple positive review: 1 sentence.
