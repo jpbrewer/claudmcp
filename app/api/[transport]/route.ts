@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { verifyBearer } from '@/lib/auth';
 import { getReview, listPendingReviews, postReply } from '@/lib/stamped';
 import { readBrandValues } from '@/lib/kb';
+import { readArtifactTemplate } from '@/lib/templates';
 
 const jsonText = (value: unknown) => ({
   content: [{ type: 'text' as const, text: JSON.stringify(value) }],
@@ -76,6 +77,24 @@ const baseHandler = createMcpHandler(
         inputSchema: {},
       },
       async () => jsonText(await readBrandValues()),
+    );
+
+    server.registerTool(
+      'get_artifact_template',
+      {
+        title: 'Get the canonical artifact template HTML',
+        description:
+          'Returns a canonical, working Cowork artifact HTML to use as the starting basis for a new artifact. Defaults to the Stamped review-queue template. Use this when building a Stamped review artifact rather than composing one from scratch.',
+        inputSchema: {
+          name: z
+            .string()
+            .optional()
+            .describe(
+              'Template name. Defaults to "stamped-review-queue". Allowed values: "stamped-review-queue".',
+            ),
+        },
+      },
+      async ({ name }) => jsonText(await readArtifactTemplate(name)),
     );
   },
   {

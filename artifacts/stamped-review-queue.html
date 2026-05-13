@@ -1,0 +1,814 @@
+<!doctype html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Stamped Review Replies",
+  "schemaVersion": 1,
+  "description": "Live dashboard of pending Stamped reviews with brand-voice-aware AI drafting and one-click posting back to Stamped.",
+  "mcpTools": [
+    "mcp__my-vercel-server__list_pending_reviews",
+    "mcp__my-vercel-server__post_reply",
+    "mcp__my-vercel-server__get_brand_values"
+  ],
+  "mcpServerNames": [
+    "my-vercel-server",
+    "my-vercel-server",
+    "my-vercel-server"
+  ]
+}
+</script>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stamped Review Replies</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+    background: #fafaf7;
+    color: #1a1a1a;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 24px 80px; }
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+  h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .subtitle { color: #666; font-size: 13px; }
+
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stat {
+    background: #fff;
+    border: 1px solid #e7e4dc;
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 88px;
+  }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #888; }
+  .stat .value { font-size: 18px; font-weight: 600; margin-top: 2px; }
+
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .chip {
+    border: 1px solid #d9d6cc;
+    background: #fff;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .chip:hover { border-color: #b9b4a4; }
+  .chip.active {
+    background: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+  }
+  .search {
+    flex: 1;
+    min-width: 200px;
+    padding: 7px 12px;
+    border: 1px solid #d9d6cc;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    color: #1a1a1a;
+  }
+  .search:focus { outline: none; border-color: #888; }
+  select.sort {
+    padding: 7px 28px 7px 12px;
+    border: 1px solid #d9d6cc;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    color: #333;
+  }
+
+  .brand-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #fff8e7;
+    border: 1px solid #f0e3b8;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #6b5614;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .brand-toggle:hover { background: #fef0c8; }
+  .brand-panel {
+    background: #fffbe9;
+    border: 1px solid #f0e3b8;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #4a3b08;
+    display: none;
+  }
+  .brand-panel.open { display: block; }
+  .brand-panel h3 { margin: 0 0 6px; font-size: 13px; color: #4a3b08; }
+  .brand-panel ul { margin: 4px 0 8px 18px; padding: 0; }
+  .brand-panel li { margin: 2px 0; }
+  .brand-panel strong { color: #2a2102; }
+
+  .list { display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: #fff;
+    border: 1px solid #e7e4dc;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.12s;
+  }
+  .card:hover { border-color: #c9c4b3; }
+  .card.replied { opacity: 0.55; }
+  .card.expanded { border-color: #1a1a1a; }
+  .row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+  }
+  .rating { flex-shrink: 0; font-size: 14px; line-height: 1; padding-top: 3px; color: #f0a500; letter-spacing: 1px; }
+  .rating.low { color: #cc3300; }
+  .body-col { flex: 1; min-width: 0; }
+  .head-line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .author { font-weight: 600; color: #1a1a1a; }
+  .product { font-size: 11px; color: #888; background: #f3f1ea; padding: 2px 8px; border-radius: 4px; }
+  .date { font-size: 11px; color: #999; }
+  .review-title { font-weight: 500; margin: 4px 0 2px; color: #222; }
+  .review-body {
+    color: #555;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 13px;
+  }
+  .card.expanded .review-body {
+    -webkit-line-clamp: unset;
+    display: block;
+    white-space: pre-wrap;
+  }
+  .chev { color: #aaa; padding-top: 2px; transition: transform 0.15s; }
+  .card.expanded .chev { transform: rotate(180deg); }
+
+  .reply-area {
+    border-top: 1px solid #eee;
+    padding: 14px 16px 16px;
+    background: #fafaf7;
+    display: none;
+  }
+  .card.expanded .reply-area { display: block; }
+  .reply-area textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 10px 12px;
+    border: 1px solid #d9d6cc;
+    border-radius: 8px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    color: #1a1a1a;
+    resize: vertical;
+  }
+  .reply-area textarea:focus { outline: none; border-color: #888; }
+  .reply-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 11px; color: #888; }
+  .reply-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    border: 1px solid #d9d6cc;
+    background: #fff;
+    color: #1a1a1a;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.12s;
+  }
+  .btn:hover:not(:disabled) { border-color: #888; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.primary {
+    background: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+  }
+  .btn.primary:hover:not(:disabled) { background: #000; }
+  .btn.ai {
+    background: #6b4ce0;
+    color: #fff;
+    border-color: #6b4ce0;
+  }
+  .btn.ai:hover:not(:disabled) { background: #5a3dd1; }
+  .reply-opts { display: flex; gap: 12px; font-size: 12px; color: #555; margin-left: auto; }
+  .reply-opts label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+  .status-msg { font-size: 12px; margin-left: 8px; }
+  .status-msg.ok { color: #2a8a3a; }
+  .status-msg.err { color: #cc3300; }
+  .replied-tag {
+    display: inline-block;
+    font-size: 11px;
+    background: #e0f1de;
+    color: #2a6e1a;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 8px;
+  }
+
+  .loading, .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #888;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
+
+  .err-banner {
+    background: #ffe9e3;
+    border: 1px solid #f4a896;
+    color: #8a2410;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Pending Stamped Reviews</h1>
+      <div class="subtitle">Reviews waiting for a reply. Draft, edit, and post — replies go directly to Stamped.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn" id="refreshBrand" title="Re-fetch brand voice from values.md on the server">
+        <span id="refreshBrandLabel">↻ Refresh brand voice</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <button class="brand-toggle" id="brandToggle">📘 Brand voice & reply rules <span id="brandMeta" style="margin-left:6px;color:#a0905a"></span></button>
+  <div class="brand-panel" id="brandPanel"></div>
+
+  <div class="controls">
+    <button class="chip active" data-filter="all">All</button>
+    <button class="chip" data-filter="5">5★ only</button>
+    <button class="chip" data-filter="4">4★</button>
+    <button class="chip" data-filter="low">≤ 3★</button>
+    <button class="chip" data-filter="month">This month</button>
+    <input class="search" id="search" placeholder="Search author, product, or text…" />
+    <select class="sort" id="sort">
+      <option value="newest">Newest first</option>
+      <option value="oldest">Oldest first</option>
+      <option value="rating">Lowest rating first</option>
+    </select>
+  </div>
+
+  <div id="errBanner"></div>
+  <div id="container">
+    <div class="loading">Loading pending reviews…</div>
+  </div>
+</div>
+
+<script>
+// Fallback brand voice used only if the server fetch fails and there's no cache.
+const BRAND_VOICE_FALLBACK = `# Transoms Direct — Voice & Reply Rules
+
+## Tone
+Warm, conversational, plainspoken. No corporate hedging.
+Short paragraphs. Contractions are fine.
+
+## Always
+- Thank the reviewer by first name.
+- Sign off as: — The TD Team
+
+## Length
+Under 100 words. Two short paragraphs at most.`;
+
+let BRAND_VOICE = BRAND_VOICE_FALLBACK;
+let BRAND_VOICE_UPDATED_AT = null;
+
+// Hydrate from localStorage cache immediately so the panel isn't empty on first paint.
+try {
+  const cached = JSON.parse(localStorage.getItem('td_brand_voice') || 'null');
+  if (cached && cached.markdown) {
+    BRAND_VOICE = cached.markdown;
+    BRAND_VOICE_UPDATED_AT = cached.updatedAt || null;
+  }
+} catch (e) {}
+
+// Tiny markdown → HTML converter that handles just what values.md uses:
+// h1/h2/h3, bullet lists, bold, italics, inline code, and paragraphs.
+function renderMarkdown(md) {
+  if (!md) return '';
+  const lines = md.split('\n');
+  const out = [];
+  let inList = false;
+  const inline = s => escapeHtml(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  const closeList = () => { if (inList) { out.push('</ul>'); inList = false; } };
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+    if (!line.trim()) { closeList(); continue; }
+    let m;
+    if ((m = line.match(/^###\s+(.*)/))) { closeList(); out.push(`<h4>${inline(m[1])}</h4>`); }
+    else if ((m = line.match(/^##\s+(.*)/))) { closeList(); out.push(`<h3>${inline(m[1])}</h3>`); }
+    else if ((m = line.match(/^#\s+(.*)/))) { closeList(); out.push(`<h2>${inline(m[1])}</h2>`); }
+    else if ((m = line.match(/^[-*]\s+(.*)/))) {
+      if (!inList) { out.push('<ul>'); inList = true; }
+      out.push(`<li>${inline(m[1])}</li>`);
+    }
+    else { closeList(); out.push(`<p>${inline(line)}</p>`); }
+  }
+  closeList();
+  return out.join('');
+}
+
+function renderBrandPanel() {
+  const panel = document.getElementById('brandPanel');
+  if (panel) panel.innerHTML = renderMarkdown(BRAND_VOICE);
+  const meta = document.getElementById('brandMeta');
+  if (meta) {
+    meta.textContent = BRAND_VOICE_UPDATED_AT
+      ? `(updated ${new Date(BRAND_VOICE_UPDATED_AT).toLocaleString()})`
+      : '';
+  }
+}
+
+async function refreshBrandVoice(showStatus) {
+  const btn = document.getElementById('refreshBrand');
+  const lbl = document.getElementById('refreshBrandLabel');
+  if (btn) btn.disabled = true;
+  if (lbl && showStatus) lbl.textContent = '↻ Refreshing…';
+  try {
+    const raw = await window.cowork.callMcpTool('mcp__my-vercel-server__get_brand_values', {});
+    const parsed = unwrapMcpResult(raw);
+    const md = parsed && (parsed.markdown || parsed.content || parsed.value || parsed._raw);
+    if (typeof md === 'string' && md.trim()) {
+      BRAND_VOICE = md;
+      BRAND_VOICE_UPDATED_AT = (parsed && parsed.updatedAt) || new Date().toISOString();
+      try {
+        localStorage.setItem('td_brand_voice', JSON.stringify({
+          markdown: BRAND_VOICE,
+          updatedAt: BRAND_VOICE_UPDATED_AT,
+        }));
+      } catch (e) {}
+      renderBrandPanel();
+      if (lbl && showStatus) {
+        lbl.textContent = '✓ Updated';
+        setTimeout(() => { lbl.textContent = '↻ Refresh brand voice'; }, 1500);
+      }
+    } else {
+      if (lbl && showStatus) {
+        lbl.textContent = '⚠ No markdown returned';
+        setTimeout(() => { lbl.textContent = '↻ Refresh brand voice'; }, 2000);
+      }
+    }
+  } catch (err) {
+    if (lbl && showStatus) {
+      lbl.textContent = '⚠ Failed — retry';
+      setTimeout(() => { lbl.textContent = '↻ Refresh brand voice'; }, 2000);
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+const state = {
+  reviews: [],
+  filter: 'all',
+  sort: 'newest',
+  search: '',
+  expanded: null,
+  drafts: {},      // reviewId -> draft text
+  posted: new Set(), // reviewIds posted this session
+  loading: true,
+  error: null,
+};
+
+// Persisted draft cache so users don't lose drafts across reloads
+try {
+  const cached = JSON.parse(localStorage.getItem('td_drafts') || '{}');
+  state.drafts = cached;
+} catch (e) {}
+
+function saveDrafts() {
+  try { localStorage.setItem('td_drafts', JSON.stringify(state.drafts)); } catch (e) {}
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function decodeEntities(s) {
+  if (!s) return '';
+  const txt = document.createElement('textarea');
+  txt.innerHTML = s;
+  return txt.value;
+}
+
+function firstName(full) {
+  if (!full) return '';
+  return full.trim().split(/\s+/)[0];
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function ageDays(iso) {
+  if (!iso) return 0;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+}
+
+function ratingStars(n) {
+  const r = Math.max(0, Math.min(5, n || 0));
+  return '★'.repeat(r) + '☆'.repeat(5 - r);
+}
+
+// Normalises whatever shape callMcpTool hands back into a plain object.
+// Handles: (a) raw object {reviews:[...]}, (b) MCP-wrapped {content:[{type:'text',text:'...'}]},
+// (c) stringified JSON, (d) nested {result:{...}} or {data:{...}} wrappers.
+function unwrapMcpResult(res) {
+  if (res == null) return null;
+
+  // String → try JSON parse
+  if (typeof res === 'string') {
+    try { return unwrapMcpResult(JSON.parse(res)); } catch { return { _raw: res }; }
+  }
+
+  if (typeof res !== 'object') return null;
+
+  // Already has the field we want
+  if (Array.isArray(res.reviews)) return res;
+
+  // MCP content array
+  if (Array.isArray(res.content) && res.content.length) {
+    const text = res.content.map(c => (c && c.text) ? c.text : '').join('');
+    if (text) {
+      try { return unwrapMcpResult(JSON.parse(text)); } catch { return { _raw: text }; }
+    }
+  }
+
+  // Common nesting wrappers
+  if (res.result) return unwrapMcpResult(res.result);
+  if (res.data) return unwrapMcpResult(res.data);
+  if (res.output) return unwrapMcpResult(res.output);
+  if (res.response) return unwrapMcpResult(res.response);
+
+  return res;
+}
+
+async function loadReviews() {
+  state.loading = true;
+  state.error = null;
+  state.debugRaw = null;
+  render();
+  try {
+    const raw = await window.cowork.callMcpTool('mcp__my-vercel-server__list_pending_reviews', { limit: 100 });
+    const parsed = unwrapMcpResult(raw);
+    if (parsed && Array.isArray(parsed.reviews)) {
+      state.reviews = parsed.reviews;
+    } else {
+      state.reviews = [];
+      state.error = 'Got a response but couldn\'t find a reviews array. Click "Show raw response" below to inspect what came back.';
+      state.debugRaw = raw;
+    }
+  } catch (err) {
+    state.error = err && err.message ? err.message : String(err);
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
+function applyFilter(list) {
+  let out = list.filter(r => !state.posted.has(r.id));
+
+  if (state.filter === '5') out = out.filter(r => r.rating === 5);
+  else if (state.filter === '4') out = out.filter(r => r.rating === 4);
+  else if (state.filter === 'low') out = out.filter(r => r.rating <= 3);
+  else if (state.filter === 'month') {
+    const cutoff = Date.now() - 30 * 86400000;
+    out = out.filter(r => new Date(r.createdAt).getTime() >= cutoff);
+  }
+
+  if (state.search.trim()) {
+    const q = state.search.toLowerCase();
+    out = out.filter(r =>
+      (r.author || '').toLowerCase().includes(q) ||
+      (r.title || '').toLowerCase().includes(q) ||
+      (r.body || '').toLowerCase().includes(q) ||
+      (r.productName || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (state.sort === 'newest') out.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  else if (state.sort === 'oldest') out.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  else if (state.sort === 'rating') out.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+
+  return out;
+}
+
+function renderStats() {
+  const all = state.reviews.filter(r => !state.posted.has(r.id));
+  const byRating = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  let oldestDays = 0;
+  all.forEach(r => {
+    if (byRating[r.rating] !== undefined) byRating[r.rating]++;
+    const age = ageDays(r.createdAt);
+    if (age > oldestDays) oldestDays = age;
+  });
+  const lowCount = byRating[1] + byRating[2] + byRating[3];
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="label">Pending</div><div class="value">${all.length}</div></div>
+    <div class="stat"><div class="label">5★</div><div class="value">${byRating[5]}</div></div>
+    <div class="stat"><div class="label">4★</div><div class="value">${byRating[4]}</div></div>
+    <div class="stat"><div class="label">≤ 3★</div><div class="value">${lowCount}</div></div>
+    <div class="stat"><div class="label">Oldest</div><div class="value">${oldestDays}d</div></div>
+  `;
+}
+
+function render() {
+  const container = document.getElementById('container');
+  const errBox = document.getElementById('errBanner');
+
+  if (state.error) {
+    const rawJson = state.debugRaw != null
+      ? (typeof state.debugRaw === 'string' ? state.debugRaw : JSON.stringify(state.debugRaw, null, 2))
+      : '';
+    errBox.innerHTML = `
+      <div class="err-banner">
+        <div>Couldn't load reviews: ${escapeHtml(state.error)}</div>
+        ${rawJson ? `
+          <details style="margin-top:8px">
+            <summary style="cursor:pointer;font-size:12px">Show raw response</summary>
+            <pre style="background:#fff;border:1px solid #f0c0b0;border-radius:6px;padding:10px;margin-top:6px;font-size:11px;max-height:300px;overflow:auto;white-space:pre-wrap;word-break:break-word;">${escapeHtml(rawJson.slice(0, 4000))}${rawJson.length > 4000 ? '\n…(truncated)' : ''}</pre>
+          </details>
+        ` : ''}
+      </div>`;
+  } else {
+    errBox.innerHTML = '';
+  }
+
+  if (state.loading) {
+    container.innerHTML = '<div class="loading">Loading pending reviews…</div>';
+    return;
+  }
+
+  renderStats();
+
+  const filtered = applyFilter(state.reviews);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">✓</div>
+        <div>No reviews match the current filter.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="list">${filtered.map(r => renderCard(r)).join('')}</div>`;
+  attachCardListeners();
+}
+
+function renderCard(r) {
+  const expanded = state.expanded === r.id;
+  const posted = state.posted.has(r.id);
+  const draft = state.drafts[r.id] || '';
+  const body = decodeEntities(r.body || '');
+  const title = decodeEntities(r.title || '');
+
+  return `
+    <div class="card ${expanded ? 'expanded' : ''} ${posted ? 'replied' : ''}" data-id="${r.id}">
+      <div class="row" data-toggle="${r.id}">
+        <div class="rating ${r.rating <= 3 ? 'low' : ''}">${ratingStars(r.rating)}</div>
+        <div class="body-col">
+          <div class="head-line">
+            <span class="author">${escapeHtml(r.author || 'Anonymous')}</span>
+            <span class="product">${escapeHtml(r.productName || '')}</span>
+            <span class="date">${fmtDate(r.createdAt)} · ${ageDays(r.createdAt)}d ago</span>
+            ${posted ? '<span class="replied-tag">Replied</span>' : ''}
+          </div>
+          ${title ? `<div class="review-title">${escapeHtml(title)}</div>` : ''}
+          <div class="review-body">${escapeHtml(body)}</div>
+        </div>
+        <div class="chev">▾</div>
+      </div>
+      <div class="reply-area">
+        <textarea data-draft="${r.id}" placeholder="Draft your reply…">${escapeHtml(draft)}</textarea>
+        <div class="reply-meta">
+          <span>Tip: thank ${escapeHtml(firstName(r.author))} by name; reference something specific.</span>
+          <span data-counter="${r.id}">${draft.length} chars</span>
+        </div>
+        <div class="reply-actions">
+          <button class="btn ai" data-gen="${r.id}">✨ Draft with AI</button>
+          <button class="btn primary" data-post="${r.id}" ${draft.trim() ? '' : 'disabled'}>Post reply</button>
+          <button class="btn" data-clear="${r.id}">Clear</button>
+          <div class="reply-opts">
+            <label><input type="checkbox" data-private="${r.id}" /> Private</label>
+            <label><input type="checkbox" data-noemail="${r.id}" /> Skip email</label>
+          </div>
+          <span class="status-msg" data-status="${r.id}"></span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function attachCardListeners() {
+  document.querySelectorAll('[data-toggle]').forEach(el => {
+    el.addEventListener('click', e => {
+      // Don't toggle if clicking inside the reply area
+      if (e.target.closest('.reply-area')) return;
+      const id = el.getAttribute('data-toggle');
+      state.expanded = state.expanded === id ? null : id;
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-draft]').forEach(el => {
+    const id = el.getAttribute('data-draft');
+    el.addEventListener('input', () => {
+      state.drafts[id] = el.value;
+      saveDrafts();
+      const cnt = document.querySelector(`[data-counter="${id}"]`);
+      if (cnt) cnt.textContent = `${el.value.length} chars`;
+      const postBtn = document.querySelector(`[data-post="${id}"]`);
+      if (postBtn) postBtn.disabled = !el.value.trim();
+    });
+    // Prevent click on textarea from collapsing card
+    el.addEventListener('click', e => e.stopPropagation());
+  });
+
+  document.querySelectorAll('[data-gen]').forEach(el => {
+    el.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id = el.getAttribute('data-gen');
+      await generateDraft(id);
+    });
+  });
+
+  document.querySelectorAll('[data-post]').forEach(el => {
+    el.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id = el.getAttribute('data-post');
+      await postReply(id);
+    });
+  });
+
+  document.querySelectorAll('[data-clear]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = el.getAttribute('data-clear');
+      delete state.drafts[id];
+      saveDrafts();
+      const ta = document.querySelector(`[data-draft="${id}"]`);
+      if (ta) {
+        ta.value = '';
+        ta.dispatchEvent(new Event('input'));
+      }
+    });
+  });
+
+  document.querySelectorAll('.reply-opts input, .reply-opts label').forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation());
+  });
+}
+
+async function generateDraft(id) {
+  const review = state.reviews.find(r => r.id === id);
+  if (!review) return;
+
+  const statusEl = document.querySelector(`[data-status="${id}"]`);
+  const genBtn = document.querySelector(`[data-gen="${id}"]`);
+  if (statusEl) { statusEl.className = 'status-msg'; statusEl.textContent = 'Drafting…'; }
+  if (genBtn) genBtn.disabled = true;
+
+  const prompt = `You are drafting a public reply to a customer review for Transoms Direct, a custom transom window company. Follow the brand voice rules strictly.
+
+BRAND VOICE RULES:
+${BRAND_VOICE}
+
+REVIEW TO REPLY TO:
+- Reviewer first name: ${firstName(review.author)}
+- Product: ${review.productName}
+- Rating: ${review.rating}/5
+- Title: ${decodeEntities(review.title || '')}
+- Body: ${decodeEntities(review.body || '')}
+
+Write the reply only — no preamble, no explanation, no quotation marks around it. Keep it under 100 words. Use the sign-off "— The TD Team".`;
+
+  try {
+    const result = await window.cowork.askClaude(prompt);
+    let text;
+    if (typeof result === 'string') {
+      text = result;
+    } else if (result && typeof result.text === 'string') {
+      text = result.text;
+    } else if (result && Array.isArray(result.content)) {
+      text = result.content.map(c => (c && c.text) ? c.text : '').join('');
+    } else {
+      text = JSON.stringify(result);
+    }
+    state.drafts[id] = text.trim();
+    saveDrafts();
+    const ta = document.querySelector(`[data-draft="${id}"]`);
+    if (ta) {
+      ta.value = state.drafts[id];
+      ta.dispatchEvent(new Event('input'));
+    }
+    if (statusEl) { statusEl.className = 'status-msg ok'; statusEl.textContent = 'Draft ready — review before posting.'; }
+  } catch (err) {
+    if (statusEl) { statusEl.className = 'status-msg err'; statusEl.textContent = 'Draft failed: ' + (err.message || err); }
+  } finally {
+    if (genBtn) genBtn.disabled = false;
+  }
+}
+
+async function postReply(id) {
+  const draft = state.drafts[id];
+  if (!draft || !draft.trim()) return;
+
+  const isPrivate = !!document.querySelector(`[data-private="${id}"]`)?.checked;
+  const skipEmail = !!document.querySelector(`[data-noemail="${id}"]`)?.checked;
+
+  const statusEl = document.querySelector(`[data-status="${id}"]`);
+  const postBtn = document.querySelector(`[data-post="${id}"]`);
+  if (statusEl) { statusEl.className = 'status-msg'; statusEl.textContent = 'Posting…'; }
+  if (postBtn) postBtn.disabled = true;
+
+  try {
+    await window.cowork.callMcpTool('mcp__my-vercel-server__post_reply', {
+      reviewId: id,
+      message: draft.trim(),
+      isPrivate,
+      notifyByEmail: !skipEmail,
+    });
+    state.posted.add(id);
+    delete state.drafts[id];
+    saveDrafts();
+    if (statusEl) { statusEl.className = 'status-msg ok'; statusEl.textContent = 'Reply posted ✓'; }
+    setTimeout(() => {
+      state.expanded = null;
+      render();
+    }, 800);
+  } catch (err) {
+    if (statusEl) { statusEl.className = 'status-msg err'; statusEl.textContent = 'Post failed: ' + (err.message || err); }
+    if (postBtn) postBtn.disabled = false;
+  }
+}
+
+// Wire up filters
+document.querySelectorAll('[data-filter]').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    state.filter = el.getAttribute('data-filter');
+    render();
+  });
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  state.search = e.target.value;
+  render();
+});
+
+document.getElementById('sort').addEventListener('change', e => {
+  state.sort = e.target.value;
+  render();
+});
+
+document.getElementById('brandToggle').addEventListener('click', () => {
+  document.getElementById('brandPanel').classList.toggle('open');
+});
+
+document.getElementById('refreshBrand').addEventListener('click', () => {
+  refreshBrandVoice(true);
+});
+
+// Initial paint of brand panel (uses cache or fallback), then fetch fresh in background.
+renderBrandPanel();
+refreshBrandVoice(false);
+
+loadReviews();
+</script>
+</body>
+</html>

@@ -15,6 +15,7 @@ Stateless Next.js (App Router, TypeScript) deployed to Vercel. Bearer-auth on ev
 | `get_review` | Fetch a single Stamped review by id |
 | `post_reply` | Post a merchant reply (public or private, with/without email) |
 | `get_brand_values` | Return the brand voice + reply rules from `content/values.md` |
+| `get_artifact_template` | Return a canonical Cowork artifact HTML (default: Stamped review queue) to use as a starting basis |
 
 ## Prerequisites
 
