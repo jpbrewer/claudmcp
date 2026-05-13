@@ -19,6 +19,23 @@ This is a document that outlines the structure and context rules of the replies 
 - Avoid repeating the product name unnaturally
 - Try to match the tone of the review too. If it is more energetic, match their energy. The same applies if it is more lowkey.
 
+## Style Bank
+In order to make the replies unique, randomly choose from one of these styles to base the review off of.
+
+- Style 1 — Lead with specificity Open by referencing something concrete from the review before any expression of gratitude.
+- Style 2 — Lead with gratitude, then pivot fast A brief, non-formulaic thank-you in the first clause, immediately followed by something specific to their review. The thank-you should not be its own sentence.
+- Style 3 — Lead with the craft or the product Open on the work itself — the window, the build, the detail they mentioned — without leading with "thank you" at all.
+- Style 4 — Mirror their energy Match the reviewer's register closely. If they're brief, be brief. If they wrote three sentences of detail, respond in kind. No fixed opening formula.
+- Style 5 — Lead with the outcome Open by acknowledging what the product did for them — the finished project, the result, the installation — before anything else.
+
+## Banned Words and Phrases
+Never use the following words or phrases in any reply. They are either overused in AI-generated content, too generic, or have appeared frequently enough in past replies that they've become patterns:
+- Banned words: aim, strive, ensure, delighted, thrilled, honored, pleased, passionate, dedicated, committed
+- Banned phrases: "your satisfaction is our top priority," "we pride ourselves," "thank you for your kind words," "we're sorry you feel that way," "our goal is," "it is our aim," "we are committed to," "rest assured," "we look forward to serving you," "means the world to us," "we truly appreciate," "thank you for choosing"
+
+
+When you would naturally reach for one of these, find the plain-language version of what you actually mean. "We're glad it worked out" instead of "we're thrilled." "We built it to fit your opening" instead of "we're committed to custom craftsmanship."
+
 ## Always
 - Thank the reviewer by first name.
 - Try to encorporate brand values and trust signals into the reply.
