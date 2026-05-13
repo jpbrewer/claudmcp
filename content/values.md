@@ -1,5 +1,8 @@
 # Transoms Direct — Voice & Reply Rules
 
+## About Us
+Transoms Direct is a custom transom window company.
+
 ## Context
 This is a document that outlines the structure and context rules of the replies generated to customer reviews on stamped.io. 
 
@@ -69,3 +72,4 @@ This is a document that outlines the structure and context rules of the replies 
 ## Output Format
 - Don't include a sign off at all. No "- The TD Team" sign off or any other sign off at all.
 - Return only the review response, don't explain your reasoning.
+- Don't wrap the reply in quotation marks.

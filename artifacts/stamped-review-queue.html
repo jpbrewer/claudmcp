@@ -278,21 +278,11 @@
 </div>
 
 <script>
-// Fallback brand voice used only if the server fetch fails and there's no cache.
-const BRAND_VOICE_FALLBACK = `# Transoms Direct — Voice & Reply Rules
-
-## Tone
-Warm, conversational, plainspoken. No corporate hedging.
-Short paragraphs. Contractions are fine.
-
-## Always
-- Thank the reviewer by first name.
-- Sign off as: — The TD Team
-
-## Length
-Under 100 words. Two short paragraphs at most.`;
-
-let BRAND_VOICE = BRAND_VOICE_FALLBACK;
+// Brand voice is loaded from the MCP server at runtime. No hardcoded
+// fallback content lives here — content/values.md is the single source
+// of truth. If neither the server fetch nor localStorage cache yields
+// the markdown, drafting stays disabled until the server is reachable.
+let BRAND_VOICE = null;
 let BRAND_VOICE_UPDATED_AT = null;
 
 // Hydrate from localStorage cache immediately so the panel isn't empty on first paint.
@@ -337,7 +327,13 @@ function renderMarkdown(md) {
 
 function renderBrandPanel() {
   const panel = document.getElementById('brandPanel');
-  if (panel) panel.innerHTML = renderMarkdown(BRAND_VOICE);
+  if (panel) {
+    if (BRAND_VOICE) {
+      panel.innerHTML = renderMarkdown(BRAND_VOICE);
+    } else {
+      panel.innerHTML = '<p><em>Brand voice not loaded — drafting is disabled until the MCP server is reachable. Click "Refresh brand voice" above to retry.</em></p>';
+    }
+  }
   const meta = document.getElementById('brandMeta');
   if (meta) {
     meta.textContent = BRAND_VOICE_UPDATED_AT
@@ -615,11 +611,10 @@ function renderCard(r) {
       <div class="reply-area">
         <textarea data-draft="${r.id}" placeholder="Draft your reply…">${escapeHtml(draft)}</textarea>
         <div class="reply-meta">
-          <span>Tip: thank ${escapeHtml(firstName(r.author))} by name; reference something specific.</span>
           <span data-counter="${r.id}">${draft.length} chars</span>
         </div>
         <div class="reply-actions">
-          <button class="btn ai" data-gen="${r.id}">✨ Draft with AI</button>
+          <button class="btn ai" data-gen="${r.id}" ${BRAND_VOICE ? '' : 'disabled title="Brand voice not loaded — see brand panel above"'}>✨ Draft with AI</button>
           <button class="btn primary" data-post="${r.id}" ${draft.trim() ? '' : 'disabled'}>Post reply</button>
           <button class="btn" data-clear="${r.id}">Clear</button>
           <div class="reply-opts">
@@ -699,12 +694,29 @@ async function generateDraft(id) {
 
   const statusEl = document.querySelector(`[data-status="${id}"]`);
   const genBtn = document.querySelector(`[data-gen="${id}"]`);
+
+  if (!BRAND_VOICE) {
+    if (statusEl) {
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = 'Brand voice not loaded — cannot draft. Click "Refresh brand voice" above.';
+    }
+    return;
+  }
+
+  if (typeof window.cowork?.askClaude !== 'function') {
+    if (statusEl) {
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = 'AI drafting unavailable in this artifact runtime — please type the reply manually below.';
+    }
+    return;
+  }
+
   if (statusEl) { statusEl.className = 'status-msg'; statusEl.textContent = 'Drafting…'; }
   if (genBtn) genBtn.disabled = true;
 
-  const prompt = `You are drafting a public reply to a customer review for Transoms Direct, a custom transom window company. Follow the brand voice rules strictly.
+  const prompt = `Follow every rule in the brand voice document below when drafting a reply.
 
-BRAND VOICE RULES:
+BRAND VOICE:
 ${BRAND_VOICE}
 
 REVIEW TO REPLY TO:
@@ -712,9 +724,7 @@ REVIEW TO REPLY TO:
 - Product: ${review.productName}
 - Rating: ${review.rating}/5
 - Title: ${decodeEntities(review.title || '')}
-- Body: ${decodeEntities(review.body || '')}
-
-Write the reply only — no preamble, no explanation, no quotation marks around it. Keep it under 100 words. Use the sign-off "— The TD Team".`;
+- Body: ${decodeEntities(review.body || '')}`;
 
   try {
     const result = await window.cowork.askClaude(prompt);
