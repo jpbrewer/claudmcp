@@ -13,6 +13,7 @@ This is a document that outlines the structure and context rules of the replies 
 - Never “AI cheerful”
 - Avoid exclamation overload
 - Avoid repeating the product name unnaturally
+- Try to match the tone of the review too. If it is more energetic, match their energy. The same applies if it is more lowkey.
 
 ## Always
 - Thank the reviewer by first name.
@@ -56,6 +57,7 @@ This is a document that outlines the structure and context rules of the replies 
 - Do not mention internal systems unless it helps explain timing or care in a natural way.
 - Do not pressure the customer to buy again.
 - Do not ask the customer to change their review.
+- Don't include a sign off after the reply.
 
 ## Length
 - Simple positive review: 1 sentence.
