@@ -381,6 +381,39 @@ async function refreshBrandVoice(showStatus) {
   }
 }
 
+// Parse the Style Bank section of the brand voice markdown.
+// Returns an array of style numbers found in lines like "- Style 3 — ...".
+// Returns [] if no Style Bank section or no matching lines.
+function parseStyleBank(markdown) {
+  if (!markdown) return [];
+  const section = markdown.match(/##\s*Style Bank\s*\n([\s\S]*?)(?=\n##\s|$)/i);
+  if (!section) return [];
+  const numbers = [];
+  const re = /^-\s*Style\s+(\d+)\s+—/gm;
+  let m;
+  while ((m = re.exec(section[1])) !== null) {
+    numbers.push(parseInt(m[1], 10));
+  }
+  return numbers;
+}
+
+// Choose a style number from styleNumbers using deterministic seed math.
+// First-draft path (lastUsed is null/undefined): styleNumbers[seed % N].
+// Regenerate path: (seed * (Date.now() % 9973)) % N, with re-roll on collision
+// against lastUsed so consecutive Regenerate clicks always produce different styles.
+function chooseStyle(seed, lastUsed, styleNumbers) {
+  if (!styleNumbers || styleNumbers.length === 0) return null;
+  const n = styleNumbers.length;
+  if (lastUsed == null) {
+    return styleNumbers[((seed % n) + n) % n];
+  }
+  let i = ((seed * (Date.now() % 9973)) % n + n) % n;
+  if (styleNumbers[i] === lastUsed) {
+    i = (i + 1) % n;
+  }
+  return styleNumbers[i];
+}
+
 const state = {
   reviews: [],
   filter: 'all',
@@ -389,6 +422,7 @@ const state = {
   expanded: null,
   drafts: {},      // reviewId -> draft text
   posted: new Set(), // reviewIds posted this session
+  lastStyleByReview: {}, // reviewId -> last style number used (in-memory only)
   loading: true,
   error: null,
 };
@@ -615,6 +649,7 @@ function renderCard(r) {
         </div>
         <div class="reply-actions">
           <button class="btn ai" data-gen="${r.id}" ${BRAND_VOICE ? '' : 'disabled title="Brand voice not loaded — see brand panel above"'}>✨ Draft with AI</button>
+          <button class="btn" data-regen="${r.id}" ${(BRAND_VOICE && draft.trim()) ? '' : 'disabled'} title="Regenerate using a different style from the Style Bank">🔁 Regenerate</button>
           <button class="btn primary" data-post="${r.id}" ${draft.trim() ? '' : 'disabled'}>Post reply</button>
           <button class="btn" data-clear="${r.id}">Clear</button>
           <div class="reply-opts">
@@ -661,6 +696,17 @@ function attachCardListeners() {
     });
   });
 
+  document.querySelectorAll('[data-regen]').forEach(el => {
+    el.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id = el.getAttribute('data-regen');
+      const styles = parseStyleBank(BRAND_VOICE);
+      const seed = parseInt(id, 10) || 0;
+      const next = chooseStyle(seed, state.lastStyleByReview[id], styles);
+      await generateDraft(id, next);
+    });
+  });
+
   document.querySelectorAll('[data-post]').forEach(el => {
     el.addEventListener('click', async e => {
       e.stopPropagation();
@@ -688,12 +734,13 @@ function attachCardListeners() {
   });
 }
 
-async function generateDraft(id) {
+async function generateDraft(id, forcedStyle) {
   const review = state.reviews.find(r => r.id === id);
   if (!review) return;
 
   const statusEl = document.querySelector(`[data-status="${id}"]`);
   const genBtn = document.querySelector(`[data-gen="${id}"]`);
+  const regenBtn = document.querySelector(`[data-regen="${id}"]`);
 
   if (!BRAND_VOICE) {
     if (statusEl) {
@@ -711,12 +758,29 @@ async function generateDraft(id) {
     return;
   }
 
+  // Determine the style for this draft. forcedStyle wins (Regenerate path).
+  // Otherwise compute via seed math from the review id and the parsed Style Bank.
+  let styleNumber = (typeof forcedStyle === 'number') ? forcedStyle : null;
+  if (styleNumber == null) {
+    const styles = parseStyleBank(BRAND_VOICE);
+    const seed = parseInt(id, 10) || 0;
+    styleNumber = chooseStyle(seed, null, styles);
+  }
+  if (styleNumber != null) {
+    state.lastStyleByReview[id] = styleNumber;
+  }
+
+  const styleLine = styleNumber != null
+    ? `For this specific draft, use **Style ${styleNumber}** from the Style Bank section of the brand voice document. Find the line beginning "Style ${styleNumber} —" and follow that style's approach. Do not switch to a different style.\n\n`
+    : '';
+
   if (statusEl) { statusEl.className = 'status-msg'; statusEl.textContent = 'Drafting…'; }
   if (genBtn) genBtn.disabled = true;
+  if (regenBtn) regenBtn.disabled = true;
 
   const prompt = `Follow every rule in the brand voice document below when drafting a reply.
 
-BRAND VOICE:
+${styleLine}BRAND VOICE:
 ${BRAND_VOICE}
 
 REVIEW TO REPLY TO:
@@ -750,6 +814,7 @@ REVIEW TO REPLY TO:
     if (statusEl) { statusEl.className = 'status-msg err'; statusEl.textContent = 'Draft failed: ' + (err.message || err); }
   } finally {
     if (genBtn) genBtn.disabled = false;
+    if (regenBtn) regenBtn.disabled = !state.drafts[id]?.trim();
   }
 }
 
