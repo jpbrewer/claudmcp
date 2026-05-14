@@ -8,6 +8,8 @@ This is a document that outlines the structure and context rules of the replies 
 
 ## Tone
 - Warm
+- Energetic but not over the top
+- Humble
 - Authentic
 - Thankful
 - Specific
@@ -16,7 +18,6 @@ This is a document that outlines the structure and context rules of the replies 
 - Craftsmanship-oriented
 - Never overly salesy
 - Never “AI cheerful”
-- Avoid exclamation overload
 - Avoid repeating the product name unnaturally
 - Try to match the tone of the review too. If it is more energetic, match their energy. The same applies if it is more lowkey.
 
@@ -77,7 +78,7 @@ When you would naturally reach for one of these, find the plain-language version
 - Don't reveal internal processes.
 - Avoid repetitive openings.
 - Avoid clichés like “your satisfaction is our top priority,” “we pride ourselves,” and “thank you for your kind words.”
-- Do not overuse exclamation points.
+- Do not use more than one exclamation points.
 - Do not make claims that are not relevant to the review.
 - Do not sound like a sales pitch.
 - Do not mention internal systems unless it helps explain timing or care in a natural way.
