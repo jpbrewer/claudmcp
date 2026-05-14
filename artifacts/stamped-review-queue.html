@@ -654,7 +654,7 @@ function renderCard(r) {
           <button class="btn" data-clear="${r.id}">Clear</button>
           <div class="reply-opts">
             <label><input type="checkbox" data-private="${r.id}" /> Private</label>
-            <label><input type="checkbox" data-noemail="${r.id}" /> Skip email</label>
+            <label><input type="checkbox" data-email="${r.id}" /> Notify by email</label>
           </div>
           <span class="status-msg" data-status="${r.id}"></span>
         </div>
@@ -823,7 +823,7 @@ async function postReply(id) {
   if (!draft || !draft.trim()) return;
 
   const isPrivate = !!document.querySelector(`[data-private="${id}"]`)?.checked;
-  const skipEmail = !!document.querySelector(`[data-noemail="${id}"]`)?.checked;
+  const notifyByEmail = !!document.querySelector(`[data-email="${id}"]`)?.checked;
 
   const statusEl = document.querySelector(`[data-status="${id}"]`);
   const postBtn = document.querySelector(`[data-post="${id}"]`);
@@ -835,7 +835,7 @@ async function postReply(id) {
       reviewId: id,
       message: draft.trim(),
       isPrivate,
-      notifyByEmail: !skipEmail,
+      notifyByEmail,
     });
     state.posted.add(id);
     delete state.drafts[id];
