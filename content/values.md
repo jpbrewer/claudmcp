@@ -22,6 +22,7 @@ We receive reviews from our customers about their purchase experience. We solici
 - Try to match the tone of the review. If it is more energetic, match their energy. The same applies if it is more lowkey.
 - You may address the customer by first name, but it's not required. Perhaps you do this occasionally.
 - Occasionally encorporate brand values -- especially if the review calls them out explicitly. 
+- Never close with a general statement about quality or results — if you close, close on the customer or the craftspeople, not the brand.  We don't want the closing to sound like a slogan or tagline. 
 
 ## Style Bank
 Each reply uses one of these styles. The artifact passes a specific style number when one is selected; in chat-only flows, pick one at random per reply.
